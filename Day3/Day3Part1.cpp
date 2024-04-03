@@ -32,18 +32,9 @@ std::map<char, int> createAlphabetMap() {
     int position = 1;
 
     while (letter <= 'z') {
-        alphabetMap[letter] = position;
+        alphabetMap[letter] = position++;
+        alphabetMap[toupper(letter)] = position + 25; // Uppercase letters start from 27
         ++letter;
-        ++position;
-    }
-
-    letter = 'A';
-    position = 27;
-
-    while (letter <= 'Z') {
-        alphabetMap[letter] = position;
-        ++letter;
-        ++position;
     }
 
     return alphabetMap;
