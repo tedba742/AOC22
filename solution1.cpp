@@ -26,6 +26,6 @@ int main() {
         return 1;
     }
 
-    std::cout << "The elf carrying most calories is carrying: " << maximumWeight;
+    std::cout << "The elf carrying most calories is carrying: " << maximumWeight << std::endl;
     return 0;
 }
