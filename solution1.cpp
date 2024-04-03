@@ -3,7 +3,6 @@
 #include <string>
 #include <cctype>
 
-void getInputFromFile() {}
 int main() {
     std::ifstream file("input.txt");
     std::string line;
