@@ -1,0 +1,37 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <cctype>
+#include <vector>
+#include <algorithm>
+
+int main() {
+    std::ifstream file("input.txt");
+    std::string line;
+    int maximumWeight{0};
+    int currentElfCaloryCount{0};
+    std::vector<int> amountOfWeight{};
+
+    if (file.is_open()) {
+        while (std::getline(file, line)) {
+            if (!line.empty() && !std::isspace(line[0])) {
+                currentElfCaloryCount += std::stoi(line);
+            } else {
+                amountOfWeight.push_back(currentElfCaloryCount);
+                currentElfCaloryCount = 0;
+            }
+        }
+        file.close();
+    } else {
+        std::cerr << "Unable to open file." << std::endl;
+        return 1;
+    }
+
+    std::sort(amountOfWeight.begin(), amountOfWeight.end(), [](int a, int b)
+                                  {
+                                      return a > b;
+                                  });    
+                                  maximumWeight = amountOfWeight[0] + amountOfWeight[1] + amountOfWeight[2]; 
+    std::cout << "The top 3 elves carrying most calories are carrying: " << maximumWeight << std::endl;
+    return 0;
+}
