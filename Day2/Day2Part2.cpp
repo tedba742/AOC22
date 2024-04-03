@@ -14,17 +14,6 @@ enum scoreValues {
     DRAW = 3 
 };
 
-bool isEqual(char a, char b){
-    if (a == 'A' && b == 'X'){
-        return true;
-    } else if (a == 'B' && b == 'Y') {
-        return true;
-    } else if (a == 'C' && b == 'Z') {
-        return true;
-    } 
-
-    return false;
-}
 // X = need to lose
 // Y = need to draw
 // Z == need to win
