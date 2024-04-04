@@ -1,0 +1,74 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <algorithm>
+#include <vector>
+#include <map>
+#include <set>
+
+std::set<char> addMatchingCharacters(std::string line1, std::string line2, std::string line3) {
+    std::set<char> line1chars(line1.begin(), line1.end());
+    std::set<char> line2chars(line2.begin(), line2.end());
+    std::set<char> line3chars(line3.begin(), line3.end());
+
+    std::set<char> intersect;
+    std::set_intersection(line1chars.begin(), line1chars.end(), line2chars.begin(), line2chars.end(),
+                          inserter(intersect, intersect.begin()));
+
+    std::set<char> intersect2;
+    std::set_intersection(line3chars.begin(), line3chars.end(), intersect.begin(), intersect.end(),
+                          inserter(intersect2, intersect2.begin()));
+
+    return intersect2;
+}
+
+std::map<char, int> createAlphabetMap() {
+    std::map<char, int> alphabetMap;
+    char letter = 'a';
+    int position = 1;
+
+    while (letter <= 'z') {
+        alphabetMap[letter] = position++;
+        alphabetMap[toupper(letter)] = position + 25;
+        ++letter;
+    }
+
+    return alphabetMap;
+}
+
+int getValues(std::map<char,int> alphabetMap, char c) {
+    int totalValueOfString{0};
+
+    if (alphabetMap.find(c) != alphabetMap.end()) {
+        totalValueOfString += alphabetMap[c];
+    }
+
+    return totalValueOfString;
+}
+
+int main() {
+    std::ifstream file("input.txt");
+    std::string line1;
+    std::string line2;
+    std::string line3;
+    uint64_t totalScore = 0;
+    std::map<char,int> alphabetMap = createAlphabetMap();
+
+    if (file.is_open()) {
+        for (std::string line1, line2, line3; std::getline(file, line1) && std::getline(file, line2) && std::getline(file, line3); ) {
+            std::set<char> intersect2 = addMatchingCharacters(line1, line2, line3);
+
+            if (!intersect2.empty()) {
+                char c = *intersect2.begin();
+                totalScore += getValues(alphabetMap, c);
+            }
+        }
+        file.close();
+    } else {
+        std::cerr << "Unable to open file." << std::endl;
+        return 1;
+    }
+
+    std::cout << "Your total score was: " << totalScore << std::endl;
+    return 0;
+}
