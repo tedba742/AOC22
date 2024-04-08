@@ -19,7 +19,7 @@ int main(){
     std::string line;
     std::getline(file, line);
     int index{0};
-    std::cout << solve(line, 4) << std::endl;
+    std::cout << solve(line, 14) << std::endl;
 
     }
 
