@@ -1,150 +1,94 @@
 #include <iostream>
-#include <map>
-#include <fstream>
 #include <vector>
-#include <string>
+#include <unordered_map>
 #include <sstream>
-#include <regex>
+#include <string>
+#include <fstream>
 
-// Structure to represent a graph node
+
 struct Node {
-    std::string fileName;
-    long fileSize; // Add a long member variable for file size
-    std::vector<Node*> neighbors;
+    std::string name;
+    int size; // 0 for directories
+    bool isDirectory;
+    std::vector<Node*> children;
 
-    Node(std::string filename, long size) : fileName(filename), fileSize(size) {}
+    Node(std::string n, int s, bool isDir) : name(n), size(s), isDirectory(isDir) {}
 };
 
-// Graph class
-class Graph {
-private:
-    std::vector<Node*> nodes;
+Node* buildFileSystemTree(const std::vector<std::string>& input) {
+    Node* root = new Node("/", 0, true);
+    std::unordered_map<std::string, Node*> pathMap;
+    pathMap["/"] = root;
+    Node* current = root;
 
-public:
-    // Add a node to the graph
-    void addNode(std::string filename, long size) {
-        Node* newNode = new Node(filename, size);
-        nodes.push_back(newNode);
-    }
-
-    // Add an edge between two nodes
-    void addEdge(std::string from, std::string to) {
-        Node* fromNode = findNode(from);
-        Node* toNode = findNode(to);
-
-        if (fromNode && toNode) {
-            fromNode->neighbors.push_back(toNode);
-            toNode->neighbors.push_back(fromNode); // If it's an undirected graph
-        }
-    }
-
-    Node* findNode(std::string filename) {
-        for (Node* node : nodes) {
-            if (node->fileName == filename) {
-                return node;
-            }
-        }
-        return nullptr;
-    }
-
-    
-    Node* findNodePointingTo(std::string filename) {
-        Node* currentNode = findNode(filename);
-
-        if (currentNode) {
-            for (Node* node : nodes) {
-                for (Node* neighbor : node->neighbors) {
-                    if (neighbor == currentNode) {
-                        return node;
-                    }
+    for (const std::string& line : input) {
+        if (line[0] == '$') {
+            if (line.substr(0, 5) == "$ cd ") {
+                std::string dir = line.substr(5);
+                if (dir == "/") {
+                    current = root;
+                } else if (dir == "..") {
+                    size_t pos = current->name.find_last_of('/');
+                    current = pathMap[current->name.substr(0, pos)];
+                } else {
+                    current = pathMap[current->name + "/" + dir];
                 }
             }
-        }
-
-        return nullptr;
-    }
-
-    void printNodesWithSmallNeighbors(long threshold) {
-        long size {0};
-        for (Node* node : nodes) {
-            if (node->fileSize < 100000){
-                size += node->fileSize;
-                std::cout << node->fileSize << std::endl;
-            }
-        }
-        std::cout << "Sum of sizes " << size << std::endl;
-    }
-
-    // Print the graph
-    void print() {
-        for (Node* node : nodes) {
-            std::cout << "Node " << node->fileName << " (Size: " << node->fileSize << ") connects to: ";
-            for (Node* neighbor : node->neighbors) {
-                std::cout << neighbor->fileName << " ";
-            }
-            std::cout << std::endl;
+        } else if (line.substr(0, 4) == "dir ") {
+            std::string dirName = line.substr(4);
+            Node* newDir = new Node(current->name + "/" + dirName, 0, true);
+            current->children.push_back(newDir);
+            pathMap[newDir->name] = newDir;
+        } else {
+            std::stringstream ss(line);
+            int size;
+            std::string fileName;
+            ss >> size >> fileName;
+            Node* newFile = new Node(current->name + "/" + fileName, size, false);
+            current->children.push_back(newFile);
         }
     }
-};
 
-std::string getCurrentDirectory(std::string in, std::string previousPosition, Graph& graph) {
-    std::string directory = in;
-    std::regex pattern{"cd"};
-    std::smatch match;
-    if (std::regex_search(directory, match, pattern)) {
-        size_t pos = directory.rfind(' ');
-        directory = directory.substr(pos);
-        if (directory == "..") {
-            Node* parentNode = graph.findNodePointingTo(previousPosition);
-            if (parentNode) {
-                return parentNode->fileName;
-            }
-        }
-        return directory;
+    return root;
+}
+
+int calculateDirectorySizes(Node* node, std::unordered_map<std::string, int>& dirSizes) {
+    if (!node->isDirectory) return node->size;
+    
+    int totalSize = 0;
+    for (Node* child : node->children) {
+        totalSize += calculateDirectorySizes(child, dirSizes);
     }
-    return previousPosition;
+    dirSizes[node->name] = totalSize;
+    return totalSize;
 }
 
 int main() {
-    std::ifstream file("input.txt");
-    std::string line;
-    std::vector<std::string> in;
-    Graph graph;
-    std::string root{"/"};
-    graph.addNode("/", 0); // Set file size to 0 initially
+    std::ifstream inputFile("input.txt");
+    if (!inputFile.is_open()) {
+        std::cerr << "Unable to open file" << std::endl;
+        return 1;
+    }
 
-    std::string directory{""};
-    while (std::getline(file, line)) {
-        in.push_back(line);
-        root = getCurrentDirectory(line, root, graph);
-        std::regex pattern{"dir"};
-        std::smatch match;
-        if (std::regex_search(line, match, pattern)) {
-            size_t pos = line.find(' ');
-            directory = line.substr(pos);
-            graph.addNode(directory, 0); // Set file size to 0 initially
-            graph.addEdge(root, directory);
-        } else if(std::isdigit(line[0])){
-            size_t pos = line.find(' ');
-            long fileSize = std::stol(line.substr(0, pos)); // Convert string to long
-            std::string fileName = line.substr(pos);
-            graph.addNode(fileName, fileSize); // Add node with file size
-            graph.addEdge(root, fileName); // Use fileName as the source node
-        } else {
-            std::regex pattern1("\\b(?:[1-9]\\d{0,6}|1000000)\\b");
-            std::smatch match1;
-            if (std::regex_search(line, match1, pattern1)) {
-                size_t pos1 = line.find(' ');
-                directory = line.substr(pos1);
-                graph.addNode(directory, 0); // Set file size to 0 initially
-                graph.addEdge(root, directory);
-            }
+    std::vector<std::string> input;
+    std::string line;
+    while (getline(inputFile, line)) {
+        input.push_back(line);
+    }
+    inputFile.close();
+
+    Node* root = buildFileSystemTree(input);
+
+    std::unordered_map<std::string, int> dirSizes;
+    calculateDirectorySizes(root, dirSizes);
+
+    int sum = 0;
+    for (const auto& pair : dirSizes) {
+        if (pair.second <= 100000) {
+            sum += pair.second;
         }
     }
 
-    graph.print();
+    std::cout << "Sum of total sizes of directories <= 100000: " << sum << std::endl;
 
-    std::cout << "Nodes with neighbors having size less than 100000:" << std::endl;
-    graph.printNodesWithSmallNeighbors(100000);
-    return 0;
 }
